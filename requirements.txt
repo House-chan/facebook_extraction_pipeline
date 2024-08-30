@@ -1,0 +1,9 @@
+apache-airflow
+pymongo
+langchain_openai
+Python-IO
+langchain
+langchain-community
+langchain-core
+langchain-google-genai
+langchain-text-splitters
