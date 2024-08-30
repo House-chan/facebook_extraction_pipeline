@@ -34,7 +34,7 @@ def extract_data():
     # Extract data from your source (e.g., database, API)
      run_input = {
           "startUrls": [{ "url": "https://www.facebook.com/share/p/rktZjXuX8avXvKJe/?mibextid=K35XfP" }],
-          "resultsLimit": 500,
+          "resultsLimit": 100,
           "viewOption": "CHRONOLOGICAL",
      }
      run = client.actor("2chN8UQcH1CfxLRNE").call(run_input=run_input)
