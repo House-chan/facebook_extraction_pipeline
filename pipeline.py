@@ -24,7 +24,7 @@ APIFY_API_KEY = os.getenv('APIFY_API_KEY')
 client = ApifyClient(APIFY_API_KEY)
 
 #? previous list for initiate
-previous_id = "ApbLPn5CCBdMHtN61"
+previous_id = "159hALfBmD4OrehG0"
 previous_house_list = []
 for item in client.dataset(previous_id).iterate_items():
     previous_house_list.append(item)
