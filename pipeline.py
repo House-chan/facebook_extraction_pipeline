@@ -51,7 +51,7 @@ def extract_data():
 
      return house_list
 
-def transform_and_upload_data():
+def transform_and_upload_data(house_list):
     extraction_list = []
     count = 0
     for i, doc in enumerate(house_list):
@@ -123,8 +123,8 @@ def check_dict_keys(d):
     return True
 
 def main():
-    extract_data()
-    transform_and_upload_data()
+    house_list = extract_data()
+    transform_and_upload_data(house_list)
     delete_empty_data()
 # Create a scheduler
 main()
