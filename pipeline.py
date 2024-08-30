@@ -75,7 +75,7 @@ def transform_and_upload_data(house_list):
         #! Transform
         extraction = Extraction_model.get_entities(text=text, date=date, img_list=img_url)
 
-        if "ต้องการขายบ้าน" == extraction["post_type"] and not check_dict_keys(house):
+        if "ต้องการขายบ้าน" == extraction["post_type"] and not check_dict_keys(extraction):
             del extraction["post_type"]
             extraction["unit_id"] = get_unit_id(extraction)
             #! Load
