@@ -43,56 +43,64 @@ def extract_data():
     #? current list
      house_list = []
      for item in client.dataset(current_id).iterate_items():
-         if item in previous_house_list:
+         if any(item["url"] in house["url"] for house in previous_house_list):
              break
          else:
              house_list.append(item)
-     logging.info("Exclude duplicate items completed")
+     logging.info(f"Exclude duplicate {500 - len(house_list)} items completed")
 
      return house_list
 
-def transform_data():
+def transform_and_upload_data():
     extraction_list = []
-    #? normal post
-    for doc in house_list:
+    count = 0
+    for i, doc in enumerate(house_list):
         img_url = []
         date = parser.parse(doc["time"])
         text = doc["text"]
+        #? normal post
         if "attachments" in doc:
           for attachment in doc["attachments"][1:]:
                img_url.append(attachment["thumbnail"])
-     #? Shared post
+        #? Shared post
         elif "sharedPost" in doc:
             # for media in doc["sharedPost"]["media"]:
             if "media" in doc["sharedPost"]:
                 for attachment in doc["sharedPost"]["media"][1:]:
                         img_url.append(attachment["thumbnail"])
+            #? use date time shared post
             date = parser.parse(doc["time"])
             text = text + "\n" + doc["sharedPost"]["text"]
         
+        #! Transform
         extraction = Extraction_model.get_entities(text=text, date=date, img_list=img_url)
-        if "ต้องการขายบ้าน" == extraction["post_type"]:
+
+        if "ต้องการขายบ้าน" == extraction["post_type"] and not check_dict_keys(house):
             del extraction["post_type"]
-            extraction_list.append(extraction)
+            extraction["unit_id"] = get_unit_id(extraction)
+            #! Load
+            properties.insert_one(extraction)
+            count += 1
+        if i % 100 == 0:
+            logging.info(f"Extraction and load Currently on {i}")
+
     # Transform the extracted data
-    logging.info("Extraction Complete")
+    logging.info("Extraction and load Complete")
+    logging.info(f"From {len(house_list)} posts remains in {count}")
     previous_house_list = house_list
     return extraction_list
 
-def load_data(extraction_list):
-    # Load the transformed data to a destination (e.g., database, file)
-    for house in extraction_list:
+def get_unit_id(house):
     #? check atleast location, price, bathroom, bedrooms have to 
-        if not check_dict_keys(house):
-            #? get last unit_id
-            result = properties.find().sort("unit_id", -1).limit(1)
-            for i in result:
-                unit_id = i["unit_id"]
-            regex = re.search(r'\d+', unit_id)
-            unit_id = "F" + str(int(regex.group()) + 1)
-            house["unit_id"] = unit_id
-            properties.insert_one(house)
-    logging.info("Load items completed")
+    if not check_dict_keys(house):
+        #? get last unit_id
+        result = properties.find().sort("unit_id", -1).limit(1)
+        for i in result:
+            unit_id = i["unit_id"]
+        regex = re.search(r'\d+', unit_id)
+        unit_id = "F" + str(int(regex.group()) + 1)
+        return unit_id
+    # logging.info(f"Load items completed ({count})")
 
 def delete_empty_data():
     query = {
@@ -116,8 +124,7 @@ def check_dict_keys(d):
 
 def main():
     extract_data()
-    house_list = transform_data()
-    load_data(house_list)
+    transform_and_upload_data()
     delete_empty_data()
 # Create a scheduler
 main()
