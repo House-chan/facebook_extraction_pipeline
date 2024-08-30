@@ -5,7 +5,6 @@ from datetime import datetime
 # import Extraction_model
 import os
 import dotenv
-from airflow.utils.dates import cron_expression
 
 # dotenv.load_dotenv()
 
@@ -44,7 +43,7 @@ with DAG(
         'owner': 'facebook_group_extraction',
         'start_date': datetime(2024, 8, 30)
     },
-    schedule=cron_expression.CronExpression(expression='*/10 * * * *')  # Run every 10 minutes
+    schedule_interval='*/10 * * * *' # Run every 10 minutes
 ) as dag:
 
     extract_task = PythonOperator(
