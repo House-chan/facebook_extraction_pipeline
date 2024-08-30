@@ -43,7 +43,7 @@ with DAG(
         'owner': 'facebook_group_extraction',
         'start_date': datetime(2024, 8, 30)
     },
-    schedule_interval='*/10 * * * *' # Run every 10 minutes
+    schedule_interval='@daily',
 ) as dag:
 
     extract_task = PythonOperator(
