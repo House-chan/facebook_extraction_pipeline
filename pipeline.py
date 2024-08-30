@@ -54,6 +54,7 @@ def extract_data():
 def transform_and_upload_data(house_list):
     extraction_list = []
     count = 0
+    unit_id = get_unit_id()
     for i, doc in enumerate(house_list):
         img_url = []
         date = parser.parse(doc["time"])
@@ -77,7 +78,8 @@ def transform_and_upload_data(house_list):
 
         if "ต้องการขายบ้าน" == extraction["post_type"] and not check_dict_keys(extraction):
             del extraction["post_type"]
-            extraction["unit_id"] = get_unit_id(extraction)
+            unit_id = "F" + str(int(get_unit_id() + 1))
+            extraction["unit_id"] = unit_id
             #! Load
             properties.insert_one(extraction)
             count += 1
@@ -90,16 +92,15 @@ def transform_and_upload_data(house_list):
     previous_house_list = house_list
     return extraction_list
 
-def get_unit_id(house):
+def get_unit_id():
     #? check atleast location, price, bathroom, bedrooms have to 
-    if not check_dict_keys(house):
+
         #? get last unit_id
-        result = properties.find().sort("unit_id", -1).limit(1)
-        for i in result:
-            unit_id = i["unit_id"]
-        regex = re.search(r'\d+', unit_id)
-        unit_id = "F" + str(int(regex.group()) + 1)
-        return unit_id
+    result = properties.find().sort("unit_id", -1).limit(1)
+    for i in result:
+        unit_id = i["unit_id"]
+    regex = re.search(r'\d+', unit_id)
+    return int(regex.group())
     # logging.info(f"Load items completed ({count})")
 
 def delete_empty_data():
