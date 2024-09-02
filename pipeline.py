@@ -101,7 +101,7 @@ def transform_and_upload_data(house_list):
             if img_url:
                 for i, url in enumerate(img_url):
                     download_webp_image(url, "test.png")
-                    img_url[i] = upload_image("test.png", (unit_id+str(i)))
+                    img_url[i] = upload_image("test.png", (unit_id+"-"+str(i)))
                 extraction["img_url"] = img_url
 
             #! Load
