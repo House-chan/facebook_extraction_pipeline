@@ -107,7 +107,7 @@ prompt = ChatPromptTemplate.from_messages(
 )
 entity_chain = prompt | llm.with_structured_output(Entities)
 
-def get_entities(text: str, date, img_list) -> dict:
+def get_entities(text: str, date) -> dict:
      query = dict(entity_chain.invoke(text))
      #? check year_built is empty
      if "ต้องการขายบ้าน" == query["post_type"]:
@@ -127,7 +127,6 @@ def get_entities(text: str, date, img_list) -> dict:
           embeded = embeddings.embed_query(str(query))
           #? check listing_date is empty
           query["listing_date"] = date
-          query["img_url"] = img_list
           query["embedding"] = embeded
 
      return query
