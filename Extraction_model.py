@@ -15,6 +15,14 @@ embeddings = OpenAIEmbeddings(api_key=api_key)
 
 class Entities(BaseModel):
      """Identifying information about entities."""
+     source_url: str = Field(
+          ...,
+          description="Source url of the post.",
+     )
+     post_text: str = Field(
+          ...,
+          description="Post text content."
+     )
      post_type: str = Field(
           ...,
           description="Determine the type of post in real estate in ต้องการขายบ้าน, ต้องการซื้อบ้าน, etc.",

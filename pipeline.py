@@ -13,27 +13,24 @@ import pymongo
 import requests
 from PIL import Image
 from io import BytesIO
+from google.cloud import storage, firestore
+from datetime import datetime
 
-import cloudinary
-import cloudinary.uploader
+# Set up Google Cloud Storage and Firestore clients
+import prepare_firebase_storage
 
-cloudinary_api_key = os.getenv('CLOUDINARY_API_KEY')
-cloudinary_secret_key = os.getenv('CLOUDINARY_SECRET_KEY')
-cloudinary.config( 
-    cloud_name = "dlfnuixd0", 
-    api_key = cloudinary_api_key, 
-    api_secret = cloudinary_secret_key, # Click 'View Credentials' below to copy your API secret
-    secure=True
-)
+firestore_db = firestore.Client()
+storage_client = storage.Client()
+
 
 logging.basicConfig(level=logging.INFO)
 
-mongo = os.getenv('MONGODB_KEY')
-uri = f"mongodb+srv://housechan:{mongo}@cluster0.wl8mbpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+mongo = os.getenv('MONGODB_PASS')
+uri = f"mongodb+srv://dylan:{mongo}@cluster0.wl8mbpy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 # Create a new client and connect to the server
-client = pymongo.MongoClient(uri)
-db = client["real_estate_thai"]
+db_client = pymongo.MongoClient(uri)
+db = db_client["real_estate_thai"]
 properties = db["house_properties"]
 
 APIFY_API_KEY = os.getenv('APIFY_API_KEY')
@@ -91,6 +88,8 @@ def transform_and_upload_data(house_list):
         
         #! Transform
         extraction = Extraction_model.get_entities(text=text, date=date)
+        extraction['post_text'] = text
+        extraction['source_url'] = doc['url']
 
         if "ต้องการขายบ้าน" == extraction["post_type"] and not check_dict_keys(extraction):
             del extraction["post_type"]
@@ -120,9 +119,14 @@ def get_unit_id():
     #? check atleast location, price, bathroom, bedrooms have to 
 
         #? get last unit_id
+        
     result = properties.find().sort("unit_id", -1).limit(1)
-    for i in result:
-        unit_id = i["unit_id"]
+    
+    # initial unit id.
+    unit_id = "A0"
+    if result:
+        for i in result:
+            unit_id = i["unit_id"]
     regex = re.search(r'\d+', unit_id)
     return int(regex.group())
     # logging.info(f"Load items completed ({count})")
@@ -150,12 +154,27 @@ def download_webp_image(url, save_path):
     # Open WebP directly from the response content
     with Image.open(BytesIO(response.content)) as img:
         img.thumbnail((800, 600))
-        img.save(save_path) 
+        img.save(save_path)
 
 def upload_image(save_path, filename):
-    upload_result = cloudinary.uploader.upload(save_path, public_id=filename)
-    url = upload_result["secure_url"]
-    return url
+    """Uploads an image to Google Cloud Storage and returns the public URL."""
+
+    # Upload the image to GCS
+    bucket_name = 'estate-390b4.appspot.com'  # Define your GCS bucket name
+    bucket = storage_client.get_bucket(bucket_name)
+    
+    # Create a unique blob name (file name) for the image
+    blob_name = f'images/{datetime.now().strftime("%Y%m%d%H%M%S")}-{filename}'
+    blob = bucket.blob(blob_name)
+
+    # Upload the image to GCS
+    blob.upload_from_filename(save_path)
+
+    # Make the blob publicly viewable
+    blob.make_public()
+
+    # Return the public URL for the uploaded image
+    return blob.public_url
 
 def check_dict_keys(d):
     for key in ["location", "price", "area_wah", "area_meter"]:
@@ -167,14 +186,22 @@ def main():
     house_list = extract_data()
     transform_and_upload_data(house_list)
     delete_empty_data()
+    
+    
 # Create a scheduler
-main()
+if __name__=="__main__":
+    main()
 
-sched = BlockingScheduler()
+    sched = BlockingScheduler()
+    
+    try:
+        # Schedule tasks
+        sched.add_job(main, 'interval', days=1) 
+        # Run task2 every day
+    except Exception as e: 
+        print("Error :", e)
 
-# Schedule tasks
-sched.add_job(main, 'interval', days=1) 
-  # Run task2 every day
+    # Start the scheduler
+    sched.start()
 
-# Start the scheduler
-sched.start()
+db_client.close()
