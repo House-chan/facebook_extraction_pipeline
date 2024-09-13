@@ -190,18 +190,20 @@ def main():
     
 # Create a scheduler
 if __name__=="__main__":
-    main()
-
     sched = BlockingScheduler()
     
+    # Schedule tasks
+    sched.add_job(main, 'interval', days=1) 
+    
     try:
-        # Schedule tasks
-        sched.add_job(main, 'interval', days=1) 
-        # Run task2 every day
+        main()
+        # Run task every day
+        sched.start()
     except Exception as e: 
         print("Error :", e)
-
+        db_client.close()
+    finally:
+        db_client.close()
     # Start the scheduler
-    sched.start()
 
 db_client.close()
